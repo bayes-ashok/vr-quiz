@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <title>Admin Dashboard</title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const rows = document.querySelectorAll("#recent-data tbody tr");
+        let data = [];
+
+        rows.forEach((row) => {
+          const cells = row.getElementsByTagName("td");
+          if (cells.length >= 4) {
+            data.push({
+              id: cells[0].textContent.trim(),
+              name: cells[1].textContent.trim(),
+              score: parseInt(cells[3].textContent.trim(), 10) || 0,
+            });
+          }
+        });
+
+        data.sort((a, b) => b.score - a.score);
+
+        const rankTableBody = document.querySelector("#rank-data tbody");
+        rankTableBody.innerHTML = "";
+        
+        if (data.length > 0) {
+          data.slice(0, 10).forEach((item, index) => {
+            let row = `<tr>
+                        <td class='border px-4 py-2'>${index + 1}</td>
+                        <td class='border px-4 py-2'>${item.id}</td>
+                        <td class='border px-4 py-2'>${item.name}</td>
+                        <td class='border px-4 py-2'>${item.score}</td>
+                      </tr>`;
+            rankTableBody.innerHTML += row;
+          });
+        } else {
+          rankTableBody.innerHTML = `<tr><td colspan='4' class='border px-4 py-2 text-center'>No data available</td></tr>`;
+        }
+      });
+
+      function showTab(tabName) {
+        document.getElementById("recent-data").classList.add("hidden");
+        document.getElementById("rank-data").classList.add("hidden");
+        document.getElementById(tabName).classList.remove("hidden");
+      }
+    </script>
+  </head>
+  <body class="bg-gray-100">
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-gradient-to-b from-blue-500 to-blue-700 text-white fixed h-full">
+        <div class="p-4 text-center border-b border-blue-300">
+          <h1 class="text-2xl font-bold">Admin Panel</h1>
+        </div>
+        <nav class="mt-4">
+          <ul>
+            <li class="hover:bg-blue-600">
+              <a href="{% url 'index' %}" class="block py-3 px-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 10l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V10z" />
+                </svg>
+                Home
+              </a>
+            </li>
+            <li class="hover:bg-blue-600">
+              <a href="{% url 'analytics' %}" class="block py-3 px-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 11V7m0 4v4m0-4H7m4 0h4m1 7v-5h2v6a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6h2v5" />
+                </svg>
+                Analytics
+              </a>
+            </li>
+            <li class="hover:bg-blue-600">
+              <a href="{% url 'vul' %}" class="block py-3 px-4 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 00-8 0v6a4 4 0 008 0V7zm4 4v4a4 4 0 11-8 0v-4" />
+                </svg>
+                Employee Information
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="ml-64 flex-1 p-6 bg-white rounded-tl-2xl shadow-xl overflow-y-auto">
+        <header class="mb-6">
+          <h2 class="text-3xl font-bold text-gray-700">Dashboard</h2>
+        </header>
+
+        <div class="mb-4">
+          <button onclick="showTab('recent-data')" class="px-4 py-2 bg-blue-500 text-white rounded">Recent Data</button>
+          <button onclick="showTab('rank-data')" class="px-4 py-2 bg-green-500 text-white rounded ml-2">Rank</button>
+        </div>
+
+        <section id="recent-data">
+          <h3 class="text-xl font-bold text-gray-700 mb-4">Employee Data</h3>
+          <table class="table-auto w-full border border-gray-200">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="border px-4 py-2">Employee ID</th>
+                <th class="border px-4 py-2">Name</th>
+                <th class="border px-4 py-2">Gender</th>
+                <th class="border px-4 py-2">Score</th>
+                <th class="border px-4 py-2">Information Skipped</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for key, data in key_value_pairs.items %}
+              <tr class="{% if data.score < 20 %}bg-red-500{% endif %}">
+                <td class="border px-4 py-2">{{ key }}</td>
+                <td class="border px-4 py-2">{{ data.name }}</td>
+                <td class="border px-4 py-2">{{ data.gender }}</td>
+                <td class="border px-4 py-2">{{ data.score }}</td>
+                <td class="border px-4 py-2">{{ data.skipped }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="border px-4 py-2 text-center">No data available</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+
+        <section id="rank-data" class="hidden">
+          <h3 class="text-xl font-bold text-gray-700 mb-4">Ranked Data</h3>
+          <table class="table-auto w-full border border-gray-200">
+            <thead>
+              <tr class="bg-gray-100">
+                <th class="border px-4 py-2">Rank</th>
+                <th class="border px-4 py-2">Player ID</th>
+                <th class="border px-4 py-2">Name</th>
+                <th class="border px-4 py-2">Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated by JavaScript -->
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
