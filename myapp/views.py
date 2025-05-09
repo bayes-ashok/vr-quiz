@@ -4,7 +4,11 @@ from collections import Counter
 from django.shortcuts import get_object_or_404, render
 from .models import KeyValueData, SurveyResponse
 import requests
-from django.db import models  # Import models for aggregation
+from django.db import models
+import matplotlib.pyplot as plt
+from django.shortcuts import render
+from io import BytesIO
+import base64
 
 import requests
 
@@ -13,6 +17,9 @@ def index(request):
     # API endpoints
     urls = [
         "https://services.api.unity.com/cloud-save/v1/data/projects/77f104be-1501-4cb5-b939-e690de43ec34/environments/002f4514-3bea-412a-a9dc-37e1ba68de0f/players/GmgJzvzMCAEFHw5IfkAGyHVchtvr/items",
+        "https://services.api.unity.com/cloud-save/v1/data/projects/77f104be-1501-4cb5-b939-e690de43ec34/environments/002f4514-3bea-412a-a9dc-37e1ba68de0f/players/OJI57uih2bCucpRRAhrUodk9SpJE/items",
+        "https://services.api.unity.com/cloud-save/v1/data/projects/77f104be-1501-4cb5-b939-e690de43ec34/environments/002f4514-3bea-412a-a9dc-37e1ba68de0f/players/aLA5MGKRijI9tKUzdGohwmPrADDd/items",
+        "https://services.api.unity.com/cloud-save/v1/data/projects/77f104be-1501-4cb5-b939-e690de43ec34/environments/002f4514-3bea-412a-a9dc-37e1ba68de0f/players/oIfm4SJ3YxXiAXXLs0aqcQ6uC2ta/items",
     ]
     
     auth_header = "Basic MDgwMTMzNzktMzdlMy00YzE1LTk4ZjQtYjVjZWE2MmU4NmVhOlJBVUxUWFhwdHM2V3ZTR3ZCVVhVVW1zMXNkb2h2b3VP"
@@ -93,10 +100,6 @@ def index(request):
 
     return render(request, 'index.html', {'key_value_pairs': key_value_pairs})
 
-import matplotlib.pyplot as plt
-from django.shortcuts import render
-from io import BytesIO
-import base64
 def analytics(request):
     # Initialize data structures
     survey_data = {
