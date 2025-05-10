@@ -305,3 +305,87 @@ def vul(request):
         'quiz_responses': quiz_responses
     }
     return render(request, 'vulnerable.html', context)
+
+
+import csv
+import json
+from django.http import HttpResponse
+from .models import SurveyResponse
+
+def download(request):
+    # Define response with CSV content type and filename
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="survey_responses.csv"'
+
+    # Option mappings for survey questions
+    survey_options = {
+        'q1': {0: 'Very light', 1: 'Manageable', 2: 'Heavy', 3: 'Very heavy'},
+        'q2': {0: 'Strongly agree', 1: 'Agree', 2: 'Neutral', 3: 'Disagree', 4: 'Strongly disagree'},
+        'q3': {0: 'Excellent', 1: 'Good', 2: 'Average', 3: 'Poor', 4: 'Very poor'},
+        'q4': {0: 'Always', 1: 'Often', 2: 'Sometimes', 3: 'Rarely', 4: 'Never'},
+        'q5': {0: 'Inspiring students', 1: 'Professional recognition', 2: 'Opportunities for growth', 3: 'Salary and benefits', 4: 'Academic freedom'}
+    }
+
+    # Option mappings for quiz questions
+    quiz_options = {f'q{i}': {j: chr(65 + j) for j in range(5)} for i in range(6, 33)}  # A, B, C, D, E
+    quiz_options['q29'] = {0: 'Mosaic plagiarism', 1: 'Code plagiarism', 2: 'Self-plagiarism', 3: 'Fabricated plagiarism'}
+
+    # Create CSV writer
+    writer = csv.writer(response)
+    
+    # Write header
+    headers = ['id', 'name', 'gender', 'score', 'skipped']
+    headers.extend([f'Q{i}' for i in range(1, 33)])  # Q1 to Q32
+    headers.extend([f'Q{i}_correct' for i in range(6, 33)])  # Correctness for Q6 to Q32
+    writer.writerow(headers)
+
+    # Fetch all responses
+    responses = SurveyResponse.objects.all()
+
+    for record in responses:
+        row = [
+            record.id,
+            record.name or '',
+            record.get_gender_display() if record.gender else '',
+            record.score,
+            'Yes' if record.skipped else 'No'
+        ]
+
+        # Parse survey answers (Q1–Q5)
+        survey_answers = json.loads(record.selected_options_from_one_to_five or '[]')
+        for i in range(1, 6):
+            q = f'q{i}'
+            if i-1 < len(survey_answers) and survey_answers[i-1]:
+                if i == 5:  # Multi-select for Q5
+                    answer = ', '.join(survey_options[q].get(opt, str(opt)) for opt in survey_answers[i-1])
+                else:
+                    answer = survey_options[q].get(survey_answers[i-1][0], str(survey_answers[i-1][0]))
+            else:
+                answer = ''
+            row.append(answer)
+
+        # Parse quiz answers (Q6–Q32)
+        quiz_answers = json.loads(record.selected_options_rest_questions or '[]')
+        for i in range(6, 33):
+            q = f'q{i}'
+            if i-6 < len(quiz_answers) and quiz_answers[i-6]:
+                if i == 29:  # Multi-select for Q29
+                    answer = ', '.join(quiz_options[q].get(opt, str(opt)) for opt in quiz_answers[i-6])
+                else:
+                    answer = quiz_options[q].get(quiz_answers[i-6][0], str(quiz_answers[i-6][0]))
+            else:
+                answer = ''
+            row.append(answer)
+
+        # Parse correctness (Q6–Q32)
+        correctness = [int(x) for x in (record.correctly_answered or '').split(',') if x]
+        for i in range(6, 33):
+            if i-6 < len(correctness):
+                correct = 'Correct' if correctness[i-6] else 'Incorrect'
+            else:
+                correct = ''
+            row.append(correct)
+
+        writer.writerow(row)
+
+    return response
